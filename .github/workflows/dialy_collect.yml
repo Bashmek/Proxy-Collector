@@ -2,7 +2,9 @@ name: Daily Proxy Collection
 
 on:
   schedule:
+    # Запуск каждый день в 00:00 UTC (можно изменить время)
     - cron: '0 0 * * *'
+  # Возможность ручного запуска
   workflow_dispatch:
 
 jobs:
@@ -24,11 +26,14 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       
       - name: Run proxy collection
-        run: python -m proxy_collect --quiet
+        run: python -m proxy_collect
       
-      - name: Upload working proxies
-        uses: actions/upload-artifact@v4
-        with:
-          name: working-proxies-${{ github.run_id }}
-          path: working_proxies.txt
-          retention-days: 90
+      - name: Commit and push working_proxies.txt
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add working_proxies.txt
+          git diff --staged --quiet || git commit -m "Update working_proxies.txt [skip ci]"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
